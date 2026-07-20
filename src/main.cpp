@@ -55,9 +55,15 @@ int getHeuristicAction(const std::vector<float>& obs, const Agent& agent, const 
         }
     }
     
-    // 전방에 벽(고도 차이, 타일 등)이 가까이 있으면 (약 3칸 이내) 회전 시도
+    // 1-2. 바로 앞 1.5칸 이내에 이동 불가능한 타일(물 또는 절벽)이 있는지 물리적 검사
+    const float nx = agent.x() + 1.5f * std::cos(agent.theta());
+    const float ny = agent.y() + 1.5f * std::sin(agent.theta());
+    const auto nextTile = terrain.tileAt(static_cast<int>(nx), static_cast<int>(ny));
+    const bool isBlockedAhead = (nextTile == TileType::Wall || nextTile == TileType::Water);
+    
+    // 전방에 벽/물이 있거나 고도 차이가 가까이 있으면 (약 3칸 이내) 회전 시도
     // 전체 맵 대각선이 141.42칸이므로 3칸은 약 0.021 비율입니다.
-    if (minCenterDist < 0.021f) {
+    if (minCenterDist < 0.021f || isBlockedAhead) {
         // 왼쪽 시야와 오른쪽 시야의 거리 합을 비교하여 더 열린 곳으로 회전
         float leftSum = 0.0f;
         float rightSum = 0.0f;
