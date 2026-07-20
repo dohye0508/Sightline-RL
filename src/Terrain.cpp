@@ -19,7 +19,7 @@ namespace rl_fov {
 // 생성자
 // ─────────────────────────────────────────────────────────────────────────────
 
-Terrain::Terrain(uint32_t seed)
+Terrain::Terrain(uint32_t seed, bool enableObstacles)
     : m_seed(seed)
 {
     // 배열 0으로 초기화
@@ -28,7 +28,7 @@ Terrain::Terrain(uint32_t seed)
 
     generateWaveLayers(seed);    // Phase 1
     addGaussianBumps(seed);      // Phase 2
-    normalizeAndComputeStats();  // Phase 3
+    normalizeAndComputeStats(enableObstacles);  // Phase 3
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ void Terrain::addBump(float cx, float cy, float sigma, float amp) {
 // 내부 생성: Phase 3 – 정규화 및 통계 계산
 // ─────────────────────────────────────────────────────────────────────────────
 
-void Terrain::normalizeAndComputeStats() {
+void Terrain::normalizeAndComputeStats(bool enableObstacles) {
     // 최솟값·최댓값 탐색
     float vMin = std::numeric_limits<float>::max();
     float vMax = std::numeric_limits<float>::lowest();
@@ -227,9 +227,9 @@ void Terrain::normalizeAndComputeStats() {
             }
             float avgHeight = sumHeight / static_cast<float>(count);
 
-            if (avgHeight <= 0.20f) { // 뭉치게 하기 위해 임계값을 약간 조정
+            if (enableObstacles && avgHeight <= 0.20f) { // 뭉치게 하기 위해 임계값을 약간 조정
                 m_tileType[row][col] = TileType::Water;
-            } else if (avgHeight >= 0.65f) { // 벽도 뭉치도록 임계값 조정
+            } else if (enableObstacles && avgHeight >= 0.65f) { // 벽도 뭉치도록 임계값 조정
                 m_tileType[row][col] = TileType::Wall;
             } else {
                 m_tileType[row][col] = TileType::Normal;

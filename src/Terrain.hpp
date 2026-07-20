@@ -28,6 +28,16 @@ namespace rl_fov {
 inline constexpr int MAP_W = 100; ///< 맵 가로 격자 수
 inline constexpr int MAP_H = 100; ///< 맵 세로 격자 수
 
+/**
+ * @enum TileType
+ * @brief 지형 타일 속성
+ */
+enum class TileType {
+    Normal, ///< 일반 평지 (이동 가능, 시야 통과)
+    Water,  ///< 물 (이동 불가, 시야 통과)
+    Wall    ///< 절벽/장애물 (이동 불가, 시야 차단)
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Terrain 클래스
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,14 +56,17 @@ public:
     // ── 타입 별칭 ────────────────────────────────────────────────────────────
     using HeightRow   = std::array<float, MAP_W>;
     using HeightArray = std::array<HeightRow, MAP_H>;
+    using TileRow     = std::array<TileType, MAP_W>;
+    using TileArray   = std::array<TileRow, MAP_H>;
 
     // ── 생성자 / 소멸자 ──────────────────────────────────────────────────────
 
     /**
      * @brief 지형 생성
      * @param seed 난수 시드 (동일 seed → 동일 지형)
+     * @param enableObstacles 장애물(물, 벽) 타일 생성 여부
      */
-    explicit Terrain(uint32_t seed = 42u);
+    explicit Terrain(uint32_t seed = 42u, bool enableObstacles = true);
 
     ~Terrain() = default;
 
@@ -72,6 +85,13 @@ public:
      * @param y 실수 y 좌표
      */
     [[nodiscard]] float heightAtF(float x, float y) const noexcept;
+
+    /**
+     * @brief 특정 격자 타일 속성 반환 (범위 밖이면 Wall 반환)
+     * @param col x 좌표(열)
+     * @param row y 좌표(행)
+     */
+    [[nodiscard]] TileType tileAt(int col, int row) const noexcept;
 
     /// 고도 배열 const 참조 반환
     [[nodiscard]] const HeightArray& data() const noexcept { return m_height; }
@@ -110,8 +130,9 @@ private:
 
     /**
      * @brief 전체 고도 배열을 [0, 1] 구간으로 정규화하고 통계 계산
+     * @param enableObstacles 장애물(물, 벽) 타일 생성 여부
      */
-    void normalizeAndComputeStats();
+    void normalizeAndComputeStats(bool enableObstacles);
 
     /**
      * @brief 단일 가우시안 범프 추가
@@ -124,6 +145,7 @@ private:
 
     // ── 멤버 변수 ────────────────────────────────────────────────────────────
     HeightArray m_height{};  ///< 고도 데이터 [row][col]
+    TileArray   m_tileType{};///< 타일 속성 데이터 [row][col]
     uint32_t    m_seed;      ///< 생성 시드
     float       m_mean{};    ///< 평균 고도
     float       m_min{};     ///< 최소 고도

@@ -24,9 +24,10 @@ namespace rl_fov {
 // 생성자
 // ─────────────────────────────────────────────────────────────────────────────
 
-RLEnvironment::RLEnvironment(uint32_t terrainSeed, RewardConfig rewardCfg, int maxSteps)
-    : m_terrain(terrainSeed)
+RLEnvironment::RLEnvironment(uint32_t terrainSeed, RewardConfig rewardCfg, int maxSteps, float fovAngleDeg, bool enableObstacles)
+    : m_terrain(terrainSeed, enableObstacles)
     , m_agent(m_terrain,
+              fovAngleDeg,
               static_cast<float>(MAP_W) / 2.0f,
               static_cast<float>(MAP_H) / 2.0f,
               0.0f)
@@ -129,9 +130,10 @@ std::vector<float> RLEnvironment::buildObservation(int newExplored) const {
 
     // ── FOV 광선 거리 (61차원) ──────────────────────────────────────────────
     // 각 광선의 도달 거리를 [0, 1]로 정규화
+    constexpr float MAX_MAP_DIST = 141.421356f; // sqrt(100^2 + 100^2)
     const auto& hits = m_agent.rayHits();
     for (const auto& hit : hits) {
-        obs.push_back(hit.distance / FOV_MAX_DIST);
+        obs.push_back(hit.distance / MAX_MAP_DIST);
     }
 
     // 광선이 부족할 경우 패딩 (정상 상황에서는 발생 안 함)

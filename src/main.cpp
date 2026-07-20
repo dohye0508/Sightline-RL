@@ -144,6 +144,16 @@ int main() {
     }
     std::cout << "-> FOV가 " << fovAngle << "도로 설정되었습니다.\n";
 
+    bool enableObstacles = true;
+    std::cout << "맵에 물과 벽(장애물) 타일을 생성하시겠습니까? (Y/N, 기본값 Y): ";
+    std::string obsStr;
+    if (std::getline(std::cin, obsStr) && !obsStr.empty()) {
+        if (obsStr == "N" || obsStr == "n") {
+            enableObstacles = false;
+        }
+    }
+    std::cout << "-> 장애물 생성: " << (enableObstacles ? "켜짐" : "꺼짐") << "\n";
+
     // ── 환경 및 시각화 인스턴스 생성 ─────────────────────────────────────────
     std::random_device rd;
     const uint32_t seed = rd(); // 매번 랜덤한 지형 시드
@@ -154,7 +164,7 @@ int main() {
     rCfg.wIdle = 0.15f;      // 제자리 제약 페널티 강화
     rCfg.wRevisit = 0.05f;   // 재방문 패널티
 
-    auto env = std::make_unique<RLEnvironment>(seed, rCfg, 600, fovAngle); // 최대 600 스텝, FOV 전달
+    auto env = std::make_unique<RLEnvironment>(seed, rCfg, 600, fovAngle, enableObstacles); // 최대 600 스텝, 설정 전달
     auto obs = env->reset();
 
     // 800x800 크기로 SFML 렌더 창 생성

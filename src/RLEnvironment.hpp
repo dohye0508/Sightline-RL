@@ -104,10 +104,14 @@ public:
      * @param terrainSeed  지형 생성 시드
      * @param rewardCfg    보상 함수 설정
      * @param maxSteps     에피소드 최대 스텝 수
+     * @param fovAngleDeg  시야각 (전체 범위 도 단위)
+     * @param enableObstacles 장애물(벽/물) 타일 활성화 여부
      */
     explicit RLEnvironment(uint32_t       terrainSeed = 42u,
                            RewardConfig   rewardCfg   = {},
-                           int            maxSteps    = MAX_STEPS);
+                           int            maxSteps    = MAX_STEPS,
+                           float          fovAngleDeg = 60.0f,
+                           bool           enableObstacles = true);
 
     ~RLEnvironment() = default;
 
