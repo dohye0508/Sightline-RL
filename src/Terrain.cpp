@@ -101,8 +101,8 @@ void Terrain::generateWaveLayers(uint32_t seed) {
         const uint32_t s2 = s1  + 0xB5297A4Du;
         const uint32_t s3 = s2  ^ (s2 >> 13u);
 
-        // 주파수: 옥타브가 올라갈수록 2배씩 증가 (1/32 ~ 1/4 칸 주기)
-        const float baseFreq = 1.0f / (static_cast<float>(MAP_W >> (NUM_OCTAVES - 1 - i)) + 1.0f);
+        // 주파수: 옥타브가 올라갈수록 2배씩 증가
+        const float baseFreq = 1.0f / (static_cast<float>(MAP_W >> i) + 2.0f);
 
         octaves[i].freqX  = baseFreq * (0.8f + 0.4f * math::pseudoRand(s0));
         octaves[i].freqY  = baseFreq * (0.8f + 0.4f * math::pseudoRand(s1));

@@ -123,19 +123,23 @@ bool Renderer::handleEvents() {
             m_window.close();
             return false;
         }
-        // 키보드 입력 → 행동 매핑 (수동 조작 모드)
-        if (event.type == sf::Event::KeyPressed) {
-            switch (event.key.code) {
-                case sf::Keyboard::Up:    m_pendingAction = 0; break; // 전진
-                case sf::Keyboard::Left:  m_pendingAction = 1; break; // 좌회전
-                case sf::Keyboard::Right: m_pendingAction = 2; break; // 우회전
-                case sf::Keyboard::Escape:
-                    m_window.close();
-                    return false;
-                default: break;
-            }
+        if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape) {
+            m_window.close();
+            return false;
         }
     }
+
+    // 실시간 키보드 상태 폴링 (OS 입력 딜레이 무시)
+    if (m_window.hasFocus()) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+            m_pendingAction = 0; // 전진
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+            m_pendingAction = 1; // 좌회전
+        } else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+            m_pendingAction = 2; // 우회전
+        }
+    }
+
     return m_window.isOpen();
 }
 
@@ -187,7 +191,16 @@ void Renderer::buildTerrainMesh() {
             const float qy = static_cast<float>(row+1) * m_cellH;
 
             const float h    = terrain.heightAt(col, row);
-            const sf::Color c = heightToColor(h);
+            const auto tType = terrain.tileAt(col, row);
+            
+            sf::Color c;
+            if (tType == TileType::Water) {
+                c = sf::Color(10, 40, 130, 255); // 깊고 푸른 물
+            } else if (tType == TileType::Wall) {
+                c = sf::Color(25, 25, 30, 255); // 어두운 벽
+            } else {
+                c = heightToColor(h);
+            }
 
             m_terrainMesh[idx + 0].position = {px, py};
             m_terrainMesh[idx + 1].position = {qx, py};
