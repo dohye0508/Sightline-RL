@@ -55,28 +55,43 @@ int getHeuristicAction(const std::vector<float>& obs, const Agent& agent, const 
         }
     }
     
-    // 1-2. 바로 앞 1.5칸 이내에 이동 불가능한 타일(물 또는 절벽)이 있는지 물리적 검사
-    const float nx = agent.x() + 1.5f * std::cos(agent.theta());
-    const float ny = agent.y() + 1.5f * std::sin(agent.theta());
-    const auto nextTile = terrain.tileAt(static_cast<int>(nx), static_cast<int>(ny));
-    const bool isBlockedAhead = (nextTile == TileType::Wall || nextTile == TileType::Water);
+    // 1-2. 바로 앞 1.0칸(실제 이동 거리) 이내 물리적 검사 및 맵 경계 검사
+    const float nx = agent.x() + 1.0f * std::cos(agent.theta());
+    const float ny = agent.y() + 1.0f * std::sin(agent.theta());
+    
+    bool isBlockedAhead = false;
+    if (nx < 0.0f || nx >= static_cast<float>(MAP_W - 1) || 
+        ny < 0.0f || ny >= static_cast<float>(MAP_H - 1)) {
+        isBlockedAhead = true; // 맵 경계 밖
+    } else {
+        const auto nextTile = terrain.tileAt(static_cast<int>(nx), static_cast<int>(ny));
+        if (nextTile == TileType::Wall || nextTile == TileType::Water) {
+            isBlockedAhead = true;
+        }
+    }
+    
+    static int consecutiveTurns = 0;
+    static int currentTurnDir = 1;
     
     // 전방에 벽/물이 있거나 고도 차이가 가까이 있으면 (약 3칸 이내) 회전 시도
-    // 전체 맵 대각선이 141.42칸이므로 3칸은 약 0.021 비율입니다.
     if (minCenterDist < 0.021f || isBlockedAhead) {
-        // 왼쪽 시야와 오른쪽 시야의 거리 합을 비교하여 더 열린 곳으로 회전
-        float leftSum = 0.0f;
-        float rightSum = 0.0f;
-        for (int i = 0; i < numRays / 2; ++i) {
-            leftSum += obs[rayStartIdx + i];
+        if (consecutiveTurns == 0) {
+            // 한 번 막혔을 때 어느 쪽으로 돌지 결정하고, 뚫릴 때까지 그 방향으로만 회전 (진동 방지)
+            float leftSum = 0.0f;
+            float rightSum = 0.0f;
+            for (int i = 0; i < numRays / 2; ++i) {
+                leftSum += obs[rayStartIdx + i];
+            }
+            for (int i = numRays / 2 + 1; i < numRays; ++i) {
+                rightSum += obs[rayStartIdx + i];
+            }
+            currentTurnDir = (leftSum > rightSum) ? 1 : 2;
         }
-        for (int i = numRays / 2 + 1; i < numRays; ++i) {
-            rightSum += obs[rayStartIdx + i];
-        }
-        
-        // 왼쪽이 더 열려있으면 좌회전(1), 오른쪽이 더 열려있으면 우회전(2)
-        return (leftSum > rightSum) ? 1 : 2;
+        consecutiveTurns++;
+        return currentTurnDir;
     }
+    
+    consecutiveTurns = 0; // 막히지 않았으므로 회전 상태 초기화
     
     // 2. 평상시에는 80% 확률로 전진하고, 20% 확률로 고도가 더 높아지는 방향을 찾아 회전
     // 고도가 높을수록 더 큰 시야 영역을 가집니다.
