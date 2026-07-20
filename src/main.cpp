@@ -130,7 +130,8 @@ int main() {
     }
 
     // ── 환경 및 시각화 인스턴스 생성 ─────────────────────────────────────────
-    const uint32_t seed = 20260720u; // 고유 지형 시드
+    std::random_device rd;
+    const uint32_t seed = rd(); // 매번 랜덤한 지형 시드
     
     RewardConfig rCfg;
     rCfg.wExplore = 1.2f;    // 신규 격자 탐험 보상 가중치 증가
