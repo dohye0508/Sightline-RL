@@ -101,8 +101,8 @@ void Terrain::generateWaveLayers(uint32_t seed) {
         const uint32_t s2 = s1  + 0xB5297A4Du;
         const uint32_t s3 = s2  ^ (s2 >> 13u);
 
-        // 주파수: 옥타브가 올라갈수록 2배씩 증가
-        const float baseFreq = 1.0f / (static_cast<float>(MAP_W >> i) + 2.0f);
+        // 주파수: 옥타브가 올라갈수록 2배씩 증가 (1/32 ~ 1/4 칸 주기)
+        const float baseFreq = 1.0f / (static_cast<float>(MAP_W >> (NUM_OCTAVES - 1 - i)) + 1.0f);
 
         octaves[i].freqX  = baseFreq * (0.8f + 0.4f * math::pseudoRand(s0));
         octaves[i].freqY  = baseFreq * (0.8f + 0.4f * math::pseudoRand(s1));
@@ -210,13 +210,26 @@ void Terrain::normalizeAndComputeStats() {
     m_max  = 1.0f;
     m_mean = sum / static_cast<float>(MAP_W * MAP_H);
 
-    // 타일 타입 결정 로직: 높이 기준
+    // 타일 타입 결정 로직: 주변 5x5 고도의 평균을 사용하여 물과 벽이 자연스럽게 뭉치도록 유도
     for (int row = 0; row < MAP_H; ++row) {
         for (int col = 0; col < MAP_W; ++col) {
-            float v = m_height[row][col];
-            if (v <= 0.15f) {
+            float sumHeight = 0.0f;
+            int count = 0;
+            for (int dy = -2; dy <= 2; ++dy) {
+                for (int dx = -2; dx <= 2; ++dx) {
+                    int ny = row + dy;
+                    int nx = col + dx;
+                    if (ny >= 0 && ny < MAP_H && nx >= 0 && nx < MAP_W) {
+                        sumHeight += m_height[ny][nx];
+                        count++;
+                    }
+                }
+            }
+            float avgHeight = sumHeight / static_cast<float>(count);
+
+            if (avgHeight <= 0.20f) { // 뭉치게 하기 위해 임계값을 약간 조정
                 m_tileType[row][col] = TileType::Water;
-            } else if (v >= 0.70f) { // 임계값을 낮춰 벽이 넓고 자연스럽게 이어지도록 수정
+            } else if (avgHeight >= 0.65f) { // 벽도 뭉치도록 임계값 조정
                 m_tileType[row][col] = TileType::Wall;
             } else {
                 m_tileType[row][col] = TileType::Normal;
