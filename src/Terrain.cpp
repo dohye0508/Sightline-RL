@@ -62,6 +62,12 @@ float Terrain::heightAtF(float x, float y) const noexcept {
     return math::lerp(h0, h1, fy);
 }
 
+TileType Terrain::tileAt(int col, int row) const noexcept {
+    if (col < 0 || col >= MAP_W || row < 0 || row >= MAP_H)
+        return TileType::Wall; // 맵 밖은 벽으로 취급
+    return m_tileType[static_cast<size_t>(row)][static_cast<size_t>(col)];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 내부 생성: Phase 1 – 다중 옥타브 웨이브 레이어
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,6 +209,20 @@ void Terrain::normalizeAndComputeStats() {
     m_min  = 0.0f;
     m_max  = 1.0f;
     m_mean = sum / static_cast<float>(MAP_W * MAP_H);
+
+    // 타일 타입 결정 로직: 높이 기준
+    for (int row = 0; row < MAP_H; ++row) {
+        for (int col = 0; col < MAP_W; ++col) {
+            float v = m_height[row][col];
+            if (v <= 0.15f) {
+                m_tileType[row][col] = TileType::Water;
+            } else if (v >= 0.70f) { // 임계값을 낮춰 벽이 넓고 자연스럽게 이어지도록 수정
+                m_tileType[row][col] = TileType::Wall;
+            } else {
+                m_tileType[row][col] = TileType::Normal;
+            }
+        }
+    }
 }
 
 } // namespace rl_fov

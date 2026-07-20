@@ -55,8 +55,9 @@ int getHeuristicAction(const std::vector<float>& obs, const Agent& agent, const 
         }
     }
     
-    // 전방에 벽(고도 차이 등)이 가까이 있으면 (시야 거리의 15% 이내) 회전 시도
-    if (minCenterDist < 0.15f) {
+    // 전방에 벽(고도 차이, 타일 등)이 가까이 있으면 (약 3칸 이내) 회전 시도
+    // 전체 맵 대각선이 141.42칸이므로 3칸은 약 0.021 비율입니다.
+    if (minCenterDist < 0.021f) {
         // 왼쪽 시야와 오른쪽 시야의 거리 합을 비교하여 더 열린 곳으로 회전
         float leftSum = 0.0f;
         float rightSum = 0.0f;
@@ -129,6 +130,14 @@ int main() {
         }
     }
 
+    float fovAngle = 60.0f;
+    std::cout << "에이전트의 FOV 시야각을 입력하세요 (예: 30, 기본값 60): ";
+    std::string fovStr;
+    if (std::getline(std::cin, fovStr) && !fovStr.empty()) {
+        try { fovAngle = std::stof(fovStr); } catch (...) {}
+    }
+    std::cout << "-> FOV가 " << fovAngle << "도로 설정되었습니다.\n";
+
     // ── 환경 및 시각화 인스턴스 생성 ─────────────────────────────────────────
     std::random_device rd;
     const uint32_t seed = rd(); // 매번 랜덤한 지형 시드
@@ -139,7 +148,7 @@ int main() {
     rCfg.wIdle = 0.15f;      // 제자리 제약 페널티 강화
     rCfg.wRevisit = 0.05f;   // 재방문 패널티
 
-    auto env = std::make_unique<RLEnvironment>(seed, rCfg, 600); // 최대 600 스텝
+    auto env = std::make_unique<RLEnvironment>(seed, rCfg, 600, fovAngle); // 최대 600 스텝, FOV 전달
     auto obs = env->reset();
 
     // 800x800 크기로 SFML 렌더 창 생성
@@ -215,13 +224,16 @@ int main() {
         }
 
         // 수동 리셋 단축키 (R 키 입력 시 에피소드 리셋)
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+        static bool rKeyPressedLastFrame = false;
+        bool rKeyPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::R);
+        if (rKeyPressed && !rKeyPressedLastFrame) {
             std::cout << "\n--- 수동 리셋 ---\n";
             obs = env->reset();
             stepResult.step = 0;
             stepResult.reward = 0.0f;
             stepResult.done = false;
         }
+        rKeyPressedLastFrame = rKeyPressed;
 
         // 렌더링 프레임 갱신
         renderer.render(stepResult);
