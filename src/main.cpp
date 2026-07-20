@@ -20,6 +20,10 @@
 #include <thread>
 #include <memory>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 using namespace rl_fov;
 
 // ── 탐색 알고리즘 설정 ───────────────────────────────────────────────────────
@@ -100,6 +104,9 @@ int getHeuristicAction(const std::vector<float>& obs, const Agent& agent, const 
 }
 
 int main() {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
     std::cout << "=========================================================\n"
               << " RL Constrained FOV Terrain Exploration Simulator\n"
               << "=========================================================\n"
